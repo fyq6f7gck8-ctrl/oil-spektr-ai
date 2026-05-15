@@ -1,65 +1,399 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect } from "react";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+
+useEffect(() => {
+
+const itemsWrap =
+document.getElementById("items");
+
+async function sendMessage(){
+
+const input =
+document.getElementById(
+"input"
+) as HTMLTextAreaElement;
+
+const text =
+input.value.trim();
+
+if(!text) return;
+
+addMessage("user", text);
+
+input.value = "";
+
+const loadingId =
+Date.now();
+
+addLoading(loadingId);
+
+try{
+
+const response =
+await fetch("/api/chat",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+message:text
+})
+});
+
+const data =
+await response.json();
+
+removeLoading(loadingId);
+
+addMessage(
+"ai",
+data.answer || "Нет ответа"
+);
+
+}catch(e){
+
+removeLoading(loadingId);
+
+addMessage(
+"ai",
+"Ошибка соединения"
+);
+
+}
+
+}
+
+function addMessage(
+type:string,
+text:string
+){
+
+const chat =
+document.getElementById("chat");
+
+if(!chat) return;
+
+chat.innerHTML += `
+<div class="msg ${type}">
+${text}
+</div>
+`;
+
+chat.scrollTop =
+chat.scrollHeight;
+
+}
+
+function addLoading(id:number){
+
+const chat =
+document.getElementById("chat");
+
+if(!chat) return;
+
+chat.innerHTML += `
+<div
+class="msg ai loading"
+id="loading-${id}"
+>
+AI думает...
+</div>
+`;
+
+chat.scrollTop =
+chat.scrollHeight;
+
+}
+
+function removeLoading(id:number){
+
+const el =
+document.getElementById(
+`loading-${id}`
+);
+
+if(el) el.remove();
+
+}
+
+async function loadPreview(){
+
+try{
+
+const response =
+await fetch("/api/chat",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+message:"c-"
+})
+});
+
+const data =
+await response.json();
+
+const lines =
+(data.answer || "")
+.split("\n")
+.slice(0,8);
+
+if(!itemsWrap) return;
+
+itemsWrap.innerHTML = "";
+
+lines.forEach(line=>{
+
+if(!line.trim()) return;
+
+itemsWrap.innerHTML += `
+<div class="item">
+
+<div class="code">
+${line.split("—")[0] || ""}
+</div>
+
+<div class="small">
+${line}
+</div>
+
+</div>
+`;
+
+});
+
+}catch(e){
+
+if(itemsWrap)
+itemsWrap.innerHTML =
+"Ошибка загрузки";
+
+}
+
+}
+
+loadPreview();
+
+(window as any).sendMessage =
+sendMessage;
+
+}, []);
+
+return (
+<>
+<style>{`
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+background:#05070d;
+color:white;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+.app{
+max-width:430px;
+margin:auto;
+min-height:100vh;
+padding-bottom:120px;
+background:#05070d;
+}
+
+.logo{
+display:flex;
+justify-content:center;
+padding:24px 0;
+}
+
+.left{
+background:#111;
+color:#ffe08a;
+padding:12px 18px;
+font-size:34px;
+font-weight:900;
+border-radius:14px 0 0 14px;
+}
+
+.right{
+background:#d63b3b;
+color:white;
+padding:12px 18px;
+font-size:34px;
+font-weight:900;
+border-radius:0 14px 14px 0;
+}
+
+.card{
+margin:14px;
+padding:18px;
+border-radius:26px;
+background:#0d1323;
+border:1px solid rgba(255,255,255,.04);
+}
+
+h2{
+margin-bottom:16px;
+font-size:22px;
+}
+
+.chat{
+height:420px;
+overflow:auto;
+padding-right:4px;
+}
+
+.msg{
+padding:14px;
+border-radius:18px;
+margin-bottom:12px;
+line-height:1.6;
+font-size:15px;
+white-space:pre-wrap;
+}
+
+.ai{
+background:#171d35;
+}
+
+.user{
+background:#5b6cff;
+}
+
+textarea{
+width:100%;
+height:90px;
+resize:none;
+border:none;
+outline:none;
+border-radius:18px;
+background:#080c17;
+color:white;
+padding:14px;
+font-size:15px;
+margin-top:10px;
+}
+
+button{
+width:100%;
+padding:16px;
+border:none;
+border-radius:18px;
+margin-top:12px;
+background:linear-gradient(
+135deg,
+#5668ff,
+#7b5cff
+);
+color:white;
+font-size:16px;
+font-weight:800;
+cursor:pointer;
+}
+
+.items{
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.item{
+padding:14px;
+border-radius:18px;
+background:#121a30;
+border:1px solid rgba(255,255,255,.05);
+}
+
+.code{
+font-size:18px;
+font-weight:800;
+margin-bottom:8px;
+}
+
+.small{
+color:#aab4da;
+font-size:14px;
+line-height:1.6;
+}
+
+.loading{
+opacity:.7;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{opacity:.4}
+50%{opacity:1}
+100%{opacity:.4}
+}
+
+`}</style>
+
+<div className="app">
+
+<div className="logo">
+<div className="left">ОИЛ</div>
+<div className="right">СПЕКТР</div>
+</div>
+
+<div className="card">
+
+<h2>🤖 Inventory AI</h2>
+
+<div id="chat" className="chat">
+
+<div className="msg ai">
+База подключена.
+
+Теперь можно спрашивать:
+
+• сколько c-110
+• сколько масляных
+• сколько воздушных
+• что заканчивается
+• что надо заказать
+• есть miles a-1003
+• покажи vic
+• топливные фильтры
+</div>
+
+</div>
+
+<textarea
+id="input"
+placeholder="Введите запрос..."
+></textarea>
+
+<button
+onClick={()=>
+(window as any).sendMessage()
+}
+>
+Отправить
+</button>
+
+</div>
+
+<div className="card">
+
+<h2>📦 Последние товары</h2>
+
+<div
+id="items"
+className="items"
+></div>
+
+</div>
+
+</div>
+</>
+);
+
 }
