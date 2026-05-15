@@ -146,7 +146,7 @@ if(!itemsWrap) return;
 
 itemsWrap.innerHTML = "";
 
-lines.forEach(line=>{
+lines.forEach((line: string) => {
 
 if(!line.trim()) return;
 
